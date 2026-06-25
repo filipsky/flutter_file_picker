@@ -45,8 +45,8 @@ android {
     dependencies {
         implementation 'androidx.core:core:1.13.1'
         implementation 'androidx.annotation:annotation:1.9.1'
-        implementation "androidx.lifecycle:lifecycle-runtime:2.8.7"
-        implementation "org.apache.tika:tika-core:3.2.3"
+        implementation "androidx.lifecycle:lifecycle-runtime:2.7.0"
+        implementation "org.apache.tika:tika-core:2.9.2"
     }
 
     if (project.android.hasProperty("namespace")) {
