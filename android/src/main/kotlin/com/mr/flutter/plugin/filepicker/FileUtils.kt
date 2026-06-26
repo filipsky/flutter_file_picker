@@ -22,11 +22,8 @@ import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.apache.tika.Tika
-import org.apache.tika.io.TikaInputStream
-import org.apache.tika.metadata.Metadata
-import org.apache.tika.metadata.TikaCoreProperties
 import java.io.BufferedInputStream
+import java.net.URLConnection
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -260,29 +257,31 @@ object FileUtils {
     }
 
     fun getFileExtension(bytes: ByteArray?): String {
-        val tika = Tika()
-        val mimeType = tika.detect(bytes)
-        return mimeType.substringAfter("/")
+        if (bytes == null || bytes.isEmpty()) return "bin"
+        return try {
+            val mimeType = URLConnection.guessContentTypeFromStream(bytes.inputStream())
+            MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"
+        } catch (e: Exception) {
+            "bin"
+        }
     }
 
     private fun getMimeTypeForBytes(fileName: String?, bytes: ByteArray?): String {
-        val tika = Tika()
-
-        val detectedType = if (fileName.isNullOrEmpty()) {
-            tika.detect(bytes)
-        } else {
-            val detector = tika.detector
-
-            val stream = TikaInputStream.get(bytes)
-            val metadata = Metadata()
-            metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, fileName)
-            detector.detect(stream, metadata).toString()
+        if (!fileName.isNullOrEmpty()) {
+            val ext = fileName.substringAfterLast('.', "").lowercase()
+            if (ext.isNotEmpty()) {
+                val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+                if (mimeType != null) return mimeType
+            }
         }
-        return if (detectedType == "text/plain") {
-            "*/*"
-        } else {
-            detectedType
+        if (bytes != null && bytes.isNotEmpty()) {
+            return try {
+                URLConnection.guessContentTypeFromStream(bytes.inputStream()) ?: "*/*"
+            } catch (e: Exception) {
+                "*/*"
+            }
         }
+        return "*/*"
     }
 
     fun FilePickerDelegate.saveFile(
